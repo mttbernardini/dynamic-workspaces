@@ -1,0 +1,10 @@
+{
+    "uuid": "dynamic-workspaces@mttbernardini", 
+    "cinnamon-version": [
+        "3.2"
+    ], 
+    "dangerous": false, 
+    "name": "Dynamic Workspaces", 
+    "description": "Generate dynamic workspaces as in GNOME 3",
+    "url": "https://github.com/mttbernardini/cinnamon-dynamic-workspaces"
+}
