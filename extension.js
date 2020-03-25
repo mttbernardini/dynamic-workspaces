@@ -1,54 +1,63 @@
-let _managed_windows, _wsadd_event, _wsdel_event;
+const Meta = imports.gi.Meta;
+
+let _handles, _adjusting;
+
+function getWorkspaces() {
+	return Array(global.screen.n_workspaces+1).join().split("").map(
+		(_,i) => global.screen.get_workspace_by_index(i)
+	);
+}
 
 function adjustWS() {
-	// TODO: avoid removing and readding last workspace
-	let i = global.screen.n_workspaces;
-	while (i--) {
-		let ws = global.screen.get_workspace_by_index(i);
+	// prevent recursion
+	if (_adjusting) return;
+	_adjusting = true;
+	let wss = getWorkspaces();
+	let last_ws = wss.splice(-1)[0];
+	wss.forEach((ws) => {
 		// if ws has no windows, it should be removed
 		if (ws.list_windows().filter(w => !w.is_on_all_workspaces()).length == 0)
 			global.screen.remove_workspace(ws, global.get_current_time());
-	}
-	// leave one final empty workspace
-	global.screen.append_new_workspace(false, global.get_current_time());
+	});
+	// if last workspace is not empty, append a new empty one
+	if (last_ws.list_windows().filter(w => !w.is_on_all_workspaces()).length > 0)
+		global.screen.append_new_workspace(false, global.get_current_time());
+	_adjusting = false;
 }
 
-function bindWindow(win) {
-	// assumes `win` is not managed
-	let eid = win.connect("workspace-changed", adjustWS);
-	_managed_windows[win] = [win, eid];
-}
-
-function unbindWindow(win) {
-	// assumes `win` is managed
-	if (typeof(win) == "string")
-		win = _managed_windows[win][0];
-	let event_id = _managed_windows[win][1];
-	win.disconnect(event_id);
-	delete _managed_windows[win];
+function bindWS(ws) {
+	let wadd_e = ws.connect("window-added", adjustWS);
+	let wrem_e = ws.connect("window-removed", adjustWS);
+	_handles.push([ws, wadd_e]);
+	_handles.push([ws, wrem_e]);
 }
 
 // Mandatory Functions //
 
 function init(extensionMeta) {
-	_managed_windows = {};
+	_handles = [];
 }
 
 function enable() {
-	_wsadd_event = global.screen.connect("window-added", (_, win) => {
-		if (!(win in _managed_windows))
-			bindWindow(win);
+	let wsadd_e = global.screen.connect("workspace-added", (_, wsi) => {
+		bindWS(global.screen.get_workspace_by_index(wsi));
+		adjustWS();
 	});
-	_wsdel_event = global.screen.connect("window-removed", (_, win) => {
-		if (win in _managed_windows)
-			unbindWindow(win);
-	})
-	global.get_window_actors().forEach((actor) => bindWindow(actor.meta_window));
+	let wsrem_e = global.screen.connect("workspace-removed", () => {
+		_handles = _handles.filter(([obj,_]) => !(obj instanceof Meta.Workspace) || getWorkspaces().indexOf(obj) > -1);
+		adjustWS();
+	});
+	_handles.push([global.screen, wsadd_e]);
+	_handles.push([global.screen, wsrem_e]);
+	// bind already existing workspaces
+	getWorkspaces().forEach(bindWS);
 	adjustWS();
 }
 
 function disable() {
-	Object.keys(_managed_windows).forEach(unbindWindow);
-	global.screen.disconnect(_wsadd_event);
-	global.screen.disconnect(_wsdel_event);
+	_handles.forEach(([obj, event_id]) => {
+		try {
+		obj.disconnect(event_id);
+		} catch(e) {global.log(e)}
+	});
 }
