@@ -4,6 +4,8 @@
 Attempt to introduce dynamic workspaces (as in GNOME 3) to Cinnamon.
 
 ## Installation
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fmttbernardini%2Fdynamic-workspaces.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fmttbernardini%2Fdynamic-workspaces?ref=badge_shield)
+
 
 ```sh
 cd ~/.local/share/cinnamon/extensions/
@@ -20,3 +22,7 @@ rm master.zip
 
 ---
 © 2020 Matteo Bernardini
+
+
+## License
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fmttbernardini%2Fdynamic-workspaces.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Fmttbernardini%2Fdynamic-workspaces?ref=badge_large)
